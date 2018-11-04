@@ -259,18 +259,19 @@ GroupAdd, WinTest, Discord
 {
     ;MsgBox, triggered
 	SavedClipboard = Clipboard
-	
-	Tooltip Italics
 
 	;MsgBox one is active
 	clipboard =
-	Sleep, 50
+	Tooltip Italics
+	Sleep, 30
 	Send, ^x
 	Clipwait, 0.5
 	If (ErrorLevel) 
 	{
 		;MsgBox, nothing selected
-		Send, {**}{Left}
+		Send, {NumpadMult}{NumpadMult}
+		Send, {Left}
+		Tooltip
 		Return
 	}
 	
