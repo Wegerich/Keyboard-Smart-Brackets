@@ -2,16 +2,70 @@ SetTitleMatchMode, 2
 GroupAdd, WinTest, Modmail
 GroupAdd, WinTest, Discord
 
+
+~RControl Up::
+~LControl Up::
+	Tooltip %A_PriorKey%
+	If ( A_TimeSincePriorKey < 1300 and InStr(A_PriorKey,"Control") )
+		   ;SendRaw, % InStr(A_ThisHotkey,"LShift") ? "(" : ")" 
+	Tooltip %A_PriorKey%
+	Sleep 1000
+	Tooltip
+Return
+
+~RShift::
+~LShift::
+	;Configuration
+	AcceptableMouseMovementPixels := 30 ;Normally around 70. Set to 10000 to disable mouse checking. Can be set very low because mouse should barely move while typing.
+	LongestAcceptableShiftTapTime := 1500 ;Normally around 1500. Set to 10000 to type bracket no matter how long shift is held
+	
+	
+	;Mouse clicks are ignored by A_PriorKey when shift is pressed
+	;Therefore an alternative method must be used to detect shift-click select as no "keys" are pressed
+	;This will be done by checking mouse position before and after {Shift Up} to see if something might be highlighted
+	;Tooltip %A_PriorKey%
+	MouseGetPos, startingXpos, startingYpos 
+	KeyWait Shift
+	;Tooltip "Shift Released"
+	;Sleep 100
+	MouseGetPos, endingXpos, endingYpos 
+	xPosChange := Abs(startingXpos - endingXpos)
+	yPosChange := Abs(startingYpos - endingYpos)
+	MousePosChangeOverall := xPosChange + yPosChange
+	;Tooltip %MousePosChangeOverall%
+	;Sleep 100	
+	
+
+	
+	If ( A_TimeSincePriorHotkey < LongestAcceptableShiftTapTime and InStr(A_PriorKey,"Shift") and MousePosChangeOverall < AcceptableMouseMovementPixels  )
+		   SendRaw, % InStr(A_ThisHotkey,"LShift") ? "(" : ")" 
+	
+Return	
+	;Debugging
+	ShiftWasLastKey := InStr(A_PriorKey,"Shift")
+	IsTapTimeAcceptable := A_TimeSincePriorHotkey < LongestAcceptableShiftTapTime
+	IsMouseMoveAcceptable := MousePosChangeOverall < AcceptableMouseMovementPixels
+	Tooltip,
+	(LTrim 
+		"Taptime" %IsTapTimeAcceptable% 
+		"Shiftpressed" %ShiftWasLastKey% 
+		"Prior" %A_PriorKey% & %A_TimeSincePriorHotkey%
+		"Mouse" %IsMouseMoveAcceptable% 
+	)
+	Sleep 1500	
+	Tooltip
+Return
+
 #IfWinActive
 ^+2::
-{
+{	
 	AutoTrim, off
 	SavedClipboard = %Clipboard%
 	Clipboard = 
 	Sleep, 10
 	;MsgBox, After clipboard clear: -%clipboard%-
 	Send, ^x
-	Clipwait, 0.5
+	Clipwait, 0.1
 	;MsgBox, "After first clipwait" -%Clipboard%-
 	
 	;Simplified version
@@ -33,14 +87,14 @@ GroupAdd, WinTest, Discord
 		Send, {Right}
 		Send, {Shift Down}{Left}{Left}{Shift Up}
 		Send, ^x
-		Clipwait, 0.5
+		Clipwait, 0.1
 		TwoCharString = %clipboard%
 		;MsgBox, Two Char String -%TwoCharString%-
 		Send, ^v 
-		Sleep, 100
+		Sleep, 10
 		Send, {Left}
 		clipboard:=WorkString
-		Sleep, 100
+		Sleep, 10
 		;If two spaces aren't left then the WorkString probably has them. Move cursor after quotation mark placement accordingly
 
 		;If the two char string that was either side of the Workstring is not spaces, detect and fix appropriately
@@ -52,7 +106,7 @@ GroupAdd, WinTest, Discord
 				;MsgBox, Space at end of -%WorkString%-
 				SendRaw, "
 				Send, ^v
-				Sleep, 90
+				Sleep, 10
 				Send, {Left}
 				SendRaw, "
 				clipboard = %SavedClipboard%
@@ -64,12 +118,12 @@ GroupAdd, WinTest, Discord
 				AutoTrim, on ;Easiest to remove space and readd manually
 				clipboard= %clipboard%
 				AutoTrim, off
-				Sleep, 100
+				Sleep, 10
 				;Msgbox, Space at start of -%WorkString%-
 				Send, {Space}
 				SendRaw, ""
 				Send, {Left}^v
-				Sleep, 100
+				Sleep, 10
 				clipboard = %SavedClipboard%
 				Return
 				}
@@ -84,7 +138,7 @@ GroupAdd, WinTest, Discord
 	Sendraw, ""
 	Send, {Left}
 	Send, ^v
-	Sleep, 100
+	Sleep, 500
 	clipboard = %SavedClipboard%
 	Return
 }
@@ -204,10 +258,10 @@ GroupAdd, WinTest, Discord
 		TwoCharString = %clipboard%
 		;MsgBox, Two Char String -%TwoCharString%-
 		Send, ^v 
-		Sleep, 100
+		Sleep, 10
 		Send, {Left}
 		clipboard:=WorkString
-		Sleep, 100
+		Sleep, 10
 		;If two spaces aren't left then the WorkString probably has them. Move cursor after quotation mark placement accordingly
 
 		;If the two char string that was either side of the Workstring is not spaces, detect and fix appropriately
@@ -219,7 +273,7 @@ GroupAdd, WinTest, Discord
 				;MsgBox, Space at end of -%WorkString%-
 				SendRaw, [
 				Send, ^v
-				Sleep, 90
+				Sleep, 10
 				Send, {Left}
 				SendRaw, ]
 				clipboard = %SavedClipboard%
@@ -231,12 +285,12 @@ GroupAdd, WinTest, Discord
 				AutoTrim, on ;Easiest to remove space and readd manually
 				clipboard= %clipboard%
 				AutoTrim, off
-				Sleep, 100
+				Sleep, 10
 				;Msgbox, Space at start of -%WorkString%-
 				Send, {Space}
 				SendRaw, []
 				Send, {Left}^v
-				Sleep, 100
+				Sleep, 10
 				clipboard = %SavedClipboard%
 				Return
 				}
@@ -263,9 +317,9 @@ GroupAdd, WinTest, Discord
 	;MsgBox one is active
 	clipboard =
 	Tooltip Italics
-	Sleep, 30
+	Sleep, 10
 	Send, ^x
-	Clipwait, 0.5
+	Clipwait, 0.1
 	If (ErrorLevel) 
 	{
 		;MsgBox, nothing selected
@@ -278,7 +332,7 @@ GroupAdd, WinTest, Discord
 
 	AutoTrim, off
 	WorkString = %clipboard%
-	Sleep, 50
+	Sleep, 10
 	StringLeft, WorkStringStart, WorkString, 1
 	StringRight, WorkStringEnd, WorkString, 1
 	varPrefix = *
@@ -303,13 +357,13 @@ GroupAdd, WinTest, Discord
 	Sleep, 10
 	clipboard = %varPrefix%%WorkString%%varSuffix%
 	;MsgBox, -%varPrefix%-%WorkString%-%varSuffix%-
-	Sleep, 50
+	Sleep, 10
 	;MsgBox, pasting %clipboard%
 	Send, ^v
 	AutoTrim, on
 	
 
-	Sleep 200
+	Sleep 20
 	Tooltip
 	Clipboard = SavedClipboard
 Return
@@ -325,7 +379,7 @@ Return
 
 	;MsgBox one is active
 	clipboard =
-	Sleep, 50
+	Sleep, 10
 	Send, ^x
 	Clipwait, 0.5
 	If (ErrorLevel) 
@@ -334,11 +388,11 @@ Return
 		Send, {**}{Left}
 		Return
 	}
-	
+	Tooltip
 
 	AutoTrim, off
 	WorkString = %clipboard%
-	Sleep, 50
+	Sleep, 10
 	StringLeft, WorkStringStart, WorkString, 1
 	StringRight, WorkStringEnd, WorkString, 1
 	varPrefix = **
@@ -363,13 +417,13 @@ Return
 	Sleep, 10
 	clipboard = %varPrefix%%WorkString%%varSuffix%
 	;MsgBox, -%varPrefix%-%WorkString%-%varSuffix%-
-	Sleep, 50
+	Sleep, 10
 	;MsgBox, pasting %clipboard%
 	Send, ^v
 	AutoTrim, on
 	
 
-	Sleep 200
+	Sleep 100
 	Tooltip
 	Clipboard = SavedClipboard
 Return
